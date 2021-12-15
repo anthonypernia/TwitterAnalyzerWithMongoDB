@@ -1,9 +1,9 @@
 import tweepy
-from MongoConnection import MongoConnection
+from MongoConnector import MongoConnector
 import json
 import datetime
 
-class TwitterConnection:
+class TwitterConnector:
     
     def __init__(self, API_KEY:str, API_KEY_SECRET:str, ACCESS_TOKEN:str, ACCESS_TOKEN_SECRET:str):
         self.API_KEY = API_KEY
@@ -15,7 +15,8 @@ class TwitterConnection:
     def __connect(self, API_KEY:str, API_KEY_SECRET:str, ACCESS_TOKEN:str, ACCESS_TOKEN_SECRET:str):
         auth = tweepy.OAuthHandler(API_KEY, API_KEY_SECRET)
         auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
-        api = tweepy.API(auth)
+        api = tweepy.API(auth, wait_on_rate_limit=True, retry_count=10, 
+                                    retry_delay=5, retry_errors=5, timeout=60)
         api.verify_credentials()
         return api
     
@@ -23,6 +24,7 @@ class TwitterConnection:
         return self.api
     
     def selecting_filter(self, filter_list:list) -> str:
+        q = ''
         filters  = {
             "retweets" : "-filter:retweets ",
             "replies" : "-filter:replies ",
@@ -33,21 +35,28 @@ class TwitterConnection:
             "native_image" : "-filter:native_image ",
             "native_retweet" : "-filter:native_retweet'"
             }
-        return ''.join([filters[i] for i in filter_list])
+        for i,f in enumerate(filter_list):
+            if i == len(filter_list)-1:
+              q += f'{filters[f]}'
+            else:
+              q += f'{filters[f]} AND '
+        return q
     
-    def get_tweets_and_save_mongoDB(self, mongo_connection:MongoConnection , query:str, count_limit:int, lat:int=None, km:int=None, lon:int=None, filters_by_default:list=['retweets', 'replies'] ) -> list:    
+    def get_tweets_and_save_mongoDB(self, mongo_connection:MongoConnector , query:str, count_limit:int, geo_loc_filter:str='', filters_by_default:list=['retweets', 'replies', 'link', 'images'] ) -> list:    
         count = 0
         id = None
+        batch = 100
         filters_to_apply = self.selecting_filter(filters_by_default)
-        geo_loc = f"geocode:{lat},{lon},{km}km" if lat and lon and km else ""
-        complete_query = f'{query}  {filters_to_apply} {geo_loc} '
+        complete_query = f'{query}  {filters_to_apply} {geo_loc_filter} '
         while count <= count_limit:
             try:
-                tweets = self.api.search_tweets(q=f"{complete_query}", lang='es', tweet_mode='extended',max_id=id)
+                tweets = self.api.search_tweets(q=f"{complete_query}", lang='es', tweet_mode='extended', max_id=id, count=batch)
                 if tweets:
+                    print(f'{len(tweets)} tweets found and last id is {id}')
+                    
                     for tweet in tweets:
+                        print(f'{tweet.full_text}')
                         json_tweet = json.dumps(tweet._json)
-                        
                         json_tweet = json.loads(json_tweet)
                         json_tweet['created_at_yyyymmdd'] = datetime.datetime.strptime(json_tweet['created_at'], '%a %b %d %H:%M:%S %z %Y').strftime('%Y-%m-%d')
                         mongo_connection.insert_one(json_tweet)
