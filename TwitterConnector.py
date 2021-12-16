@@ -59,6 +59,8 @@ class TwitterConnector:
                         json_tweet = json.dumps(tweet._json)
                         json_tweet = json.loads(json_tweet)
                         json_tweet['created_at_yyyymmdd'] = datetime.datetime.strptime(json_tweet['created_at'], '%a %b %d %H:%M:%S %z %Y').strftime('%Y-%m-%d')
+                        json_tweet['stored_at'] = datetime.datetime.now().strftime('%Y-%m-%d')
+                        json_tweet['stored_at_full'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         mongo_connection.insert_one(json_tweet)
                         count += 1
                         id = tweet.id

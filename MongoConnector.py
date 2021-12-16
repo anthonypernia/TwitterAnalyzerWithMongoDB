@@ -1,17 +1,14 @@
 from pymongo import MongoClient
 
 class MongoConnector:
-    def __init__(self, user:str, password:str, db_name:str, collection_name:str, host:str, port:int):
-        self.user = user
-        self.password = password
+    def __init__(self, db_uri:str , db_name:str, collection_name:str):
         self.db_name = db_name
+        self.db_uri = db_uri
         self.collection_name = collection_name
-        self.host = host
-        self.port = port
-        self.coll, self.db, self.conn = self.__connect(self.user, self.password, self.db_name, self.collection_name, self.host, self.port)
+        self.coll, self.db, self.conn = self.__connect(self.db_uri ,self.db_name, self.collection_name)
         
-    def __connect(self, user:str, password:str, db_name:str, collection_name:str, host:str, port:int):
-        conn = MongoClient(f'mongodb://{user}:{password}@{host}:{port}/')
+    def __connect(self, db_uri:str,  db_name:str, collection_name:str):
+        conn = MongoClient(f'{db_uri}')
         db = conn[db_name]
         coll = db[collection_name] 
         return coll, db , conn
