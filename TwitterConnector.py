@@ -45,7 +45,7 @@ class TwitterConnector:
     def get_tweets_and_save_mongoDB(self, mongo_connection:MongoConnector , query:str, count_limit:int, geo_loc_filter:str='', filters_by_default:list=['retweets', 'replies', 'link', 'images'] ) -> list:    
         count = 0
         id = None
-        batch = 100
+        batch = 200
         filters_to_apply = self.selecting_filter(filters_by_default)
         complete_query = f'{query}  {filters_to_apply} {geo_loc_filter} '
         while count <= count_limit:

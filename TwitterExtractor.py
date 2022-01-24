@@ -17,7 +17,6 @@ class TwitterExtractor:
         self.km= km
         self.count_twees = int(credentials.COUNT_TWEETS) if int(credentials.COUNT_TWEETS) > 1 else count_twees
         self.geo_loc_filter = f"geocode:{self.lat},{self.lon},{self.km}km" if self.lat and self.lon and self.km else ""
-        self.query = query
         self.prefix_collection = credentials.PREFIX_COLLECTION
         self.API_KEY = credentials.API_KEY
         self.API_KEY_SECRET = credentials.API_KEY_SECRET
@@ -39,11 +38,11 @@ class TwitterExtractor:
 
 
     def search_tweets(self):
-        
         if self.mongo_connection:
             print('Mongo Connected')
             if self.twitter_connection:
                 print('Twitter Connected')
+                print(f'Searching tweets about {self.query}')
                 self.twitter_connector.get_tweets_and_save_mongoDB(self.mongo_connector, query = self.query, count_limit= self.count_twees)
             else:
                 print('Twitter Connection Error')
